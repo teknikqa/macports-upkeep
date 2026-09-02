@@ -16,16 +16,35 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Resolve macports-base HEAD
+        id: mp
+        run: echo "sha=$(git ls-remote https://github.com/macports/macports-base.git HEAD | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      # Cache the *build*, not the install: /opt/local itself is never
+      # cached, so every run gets a clean registry/config with no risk of
+      # stale state from a previous run's installed ports. Only the
+      # expensive configure+make compilation is skipped on a cache hit.
+      - name: Cache MacPorts base build
+        id: cache-macports-build
+        uses: actions/cache@v4
+        with:
+          path: /tmp/macports-base
+          key: macports-base-build-${{ runner.os }}-${{ steps.mp.outputs.sha }}
+
       # Builds MacPorts base from source (the officially documented
       # alternative to the .pkg installer: https://guide.macports.org/#installing.macports.source)
       # rather than relying on a third-party Action, since this job needs
       # write access to push the regenerated index back to the repo.
       - name: Bootstrap MacPorts base
         run: |
-          git clone --depth 1 https://github.com/macports/macports-base.git /tmp/macports-base
+          if [ "${{ steps.cache-macports-build.outputs.cache-hit }}" != "true" ]; then
+            rm -rf /tmp/macports-base
+            git clone --depth 1 https://github.com/macports/macports-base.git /tmp/macports-base
+            cd /tmp/macports-base
+            ./configure
+            make
+          fi
           cd /tmp/macports-base
-          ./configure
-          make
           sudo make install
           echo "/opt/local/bin" >> "$GITHUB_PATH"
           echo "/opt/local/sbin" >> "$GITHUB_PATH"
@@ -48,6 +67,13 @@ jobs:
           echo "macportsuser root" | sudo tee -a /opt/local/etc/macports/macports.conf
           sudo port -v install upkeep
           upkeep --list
+
+      # The runner is always arm64, so the install above only exercises the
+      # arm64 checksum. Force the x86_64 branch and have MacPorts actually
+      # fetch and verify that distfile's checksum too, so a bad amd64
+      # checksum in the Portfile can't silently ship.
+      - name: Verify x86_64 checksum
+        run: sudo port -d checksum upkeep os.arch=i386 build_arch=x86_64
 
       - name: Commit and push PortIndex
         run: |
