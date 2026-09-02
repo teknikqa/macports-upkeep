@@ -1,0 +1,2 @@
+upkeep 518
+description {Keep your macOS development environment up to date} homepage https://github.com/teknikqa/upkeep epoch 0 platforms darwin name upkeep license MIT maintainers @teknikqa installs_libs no long_description {upkeep is a shell-independent CLI that scans and updates Homebrew, npm/pnpm/yarn/bun, Composer, pip, Rust, uv, code editor extensions, Oh My Zsh, Vim, Vagrant, MacPorts, and Mac App Store apps in a single scan/confirm/execute pass.} version 0.11.0 categories sysutils revision 0 portdir sysutils/upkeep
