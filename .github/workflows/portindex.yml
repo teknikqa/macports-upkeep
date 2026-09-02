@@ -41,6 +41,9 @@ jobs:
           conf=/opt/local/etc/macports/sources.conf
           { echo "file://${GITHUB_WORKSPACE}"; cat "$conf"; } | sudo tee "${conf}.new" >/dev/null
           sudo mv "${conf}.new" "$conf"
+          # port runs as root; make sure it can read the checkout (the
+          # runner user's clone may not be world-readable by default).
+          chmod -R a+rX "$GITHUB_WORKSPACE"
           sudo port -v install upkeep
           upkeep --list
 
