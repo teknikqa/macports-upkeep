@@ -33,6 +33,17 @@ jobs:
       - name: Generate PortIndex
         run: portindex
 
+      # Prove the Portfile actually installs, not just that it parses:
+      # point MacPorts at this checkout as a source (ahead of the default)
+      # and do a real `port install`.
+      - name: Validate install
+        run: |
+          conf=/opt/local/etc/macports/sources.conf
+          { echo "file://${GITHUB_WORKSPACE}"; cat "$conf"; } | sudo tee "${conf}.new" >/dev/null
+          sudo mv "${conf}.new" "$conf"
+          sudo port -v install upkeep
+          upkeep --list
+
       - name: Commit and push PortIndex
         run: |
           git config user.name "github-actions[bot]"
