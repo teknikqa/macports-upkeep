@@ -41,12 +41,11 @@ jobs:
           conf=/opt/local/etc/macports/sources.conf
           { echo "file://${GITHUB_WORKSPACE}"; cat "$conf"; } | sudo tee "${conf}.new" >/dev/null
           sudo mv "${conf}.new" "$conf"
-          # port runs as root; make sure it can read the checkout (the
-          # runner user's clone may not be world-readable by default).
-          chmod -R a+rX "$GITHUB_WORKSPACE"
-          echo "--- perms/ACLs on Portfile and its parents ---"
-          ls -leO@d "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/sysutils" "$GITHUB_WORKSPACE/sysutils/upkeep" "$GITHUB_WORKSPACE/sysutils/upkeep/Portfile"
-          sudo -n cat "$GITHUB_WORKSPACE/sysutils/upkeep/Portfile" >/dev/null && echo "sudo cat: OK" || echo "sudo cat: FAILED"
+          # port itself reads fine as root, but MacPorts drops privileges to
+          # an unprivileged build user (macportsuser) for the actual fetch/
+          # build/destroot work, and that user can't read a source outside
+          # /opt/local's trees — see https://guide.macports.org/#internals.configuration-files.macports-conf
+          echo "macportsuser root" | sudo tee -a /opt/local/etc/macports/macports.conf
           sudo port -v install upkeep
           upkeep --list
 
