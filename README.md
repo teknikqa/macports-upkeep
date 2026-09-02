@@ -27,11 +27,18 @@ A self-hosted [MacPorts](https://www.macports.org) port repository for [upkeep](
 
 ```bash
 cd ~/.macports-upkeep && git pull
-sudo port selfupdate
 sudo port upgrade upkeep
 ```
 
 The `PortIndex` in this repo is regenerated automatically by CI whenever the `Portfile` changes, so a `git pull` is all you need locally — no manual `portindex` step.
+
+## Troubleshooting
+
+**`Failed to open statefile for upkeep: ... Permission denied`** — MacPorts drops root privileges to an unprivileged build user for fetch/build/destroot, which can't read a source tree outside `/opt/local`. Add this to `/opt/local/etc/macports/macports.conf`:
+
+```
+macportsuser root
+```
 
 ## Maintenance
 
