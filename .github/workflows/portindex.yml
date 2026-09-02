@@ -1,0 +1,46 @@
+name: Regenerate PortIndex
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/Portfile"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  portindex:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Builds MacPorts base from source (the officially documented
+      # alternative to the .pkg installer: https://guide.macports.org/#installing.macports.source)
+      # rather than relying on a third-party Action, since this job needs
+      # write access to push the regenerated index back to the repo.
+      - name: Bootstrap MacPorts base
+        run: |
+          git clone --depth 1 https://github.com/macports/macports-base.git /tmp/macports-base
+          cd /tmp/macports-base
+          ./configure
+          make
+          sudo make install
+          echo "/opt/local/bin" >> "$GITHUB_PATH"
+          echo "/opt/local/sbin" >> "$GITHUB_PATH"
+
+      - name: Generate PortIndex
+        run: portindex
+
+      - name: Commit and push PortIndex
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add PortIndex PortIndex.quick
+          if git diff --cached --quiet; then
+            echo "PortIndex unchanged"
+          else
+            git commit -m "chore: regenerate PortIndex"
+            git push
+          fi
