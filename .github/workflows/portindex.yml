@@ -44,6 +44,9 @@ jobs:
           # port runs as root; make sure it can read the checkout (the
           # runner user's clone may not be world-readable by default).
           chmod -R a+rX "$GITHUB_WORKSPACE"
+          echo "--- perms/ACLs on Portfile and its parents ---"
+          ls -leO@d "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/sysutils" "$GITHUB_WORKSPACE/sysutils/upkeep" "$GITHUB_WORKSPACE/sysutils/upkeep/Portfile"
+          sudo -n cat "$GITHUB_WORKSPACE/sysutils/upkeep/Portfile" >/dev/null && echo "sudo cat: OK" || echo "sudo cat: FAILED"
           sudo port -v install upkeep
           upkeep --list
 
